@@ -4,17 +4,13 @@ import burst.kit.crypto.BurstCrypto;
 import burst.kit.entity.BurstAddress;
 import burst.kit.entity.BurstID;
 import burst.kit.entity.BurstValue;
-import burst.kit.entity.response.Constants;
 import burst.kit.entity.response.*;
 import burst.kit.entity.response.attachment.ATCreationAttachment;
 import burst.kit.entity.response.attachment.MultiOutAttachment;
 import burst.kit.entity.response.attachment.MultiOutSameAttachment;
 import burst.kit.service.BurstNodeService;
 import org.bouncycastle.util.encoders.Hex;
-import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -24,17 +20,12 @@ import java.util.Set;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-@RunWith(JUnit4.class)
-public class BurstNodeServiceTest {
+public abstract class BurstNodeServiceTest {
 
-    private BurstNodeService burstNodeService;
-    private BurstCrypto burstCrypto;
+    private final BurstNodeService burstNodeService = getBurstNodeService();
+    private final BurstCrypto burstCrypto = BurstCrypto.getInstance();
 
-    @Before
-    public void setUpBurstServiceTest() {
-        burstNodeService = BurstNodeService.getInstance("https://wallet1.burst-team.us:2083");
-        burstCrypto = BurstCrypto.getInstance();
-    }
+    protected abstract BurstNodeService getBurstNodeService();
 
     @Test
     public void testBurstServiceGetBlock() {
@@ -101,7 +92,7 @@ public class BurstNodeServiceTest {
 
     @Test
     public void testBurstServiceGetAtIDs() {
-        BurstID[] atIDsResponse = RxTestUtils.testSingle(burstNodeService.getAtIds());
+        BurstAddress[] atIDsResponse = RxTestUtils.testSingle(burstNodeService.getAtIds());
     }
 
     @Test
@@ -128,7 +119,8 @@ public class BurstNodeServiceTest {
 
     @Test
     public void testBurstServiceGenerateTransaction() {
-        byte[] withoutMessage = RxTestUtils.testSingle(burstNodeService.generateTransaction(TestVariables.EXAMPLE_ACCOUNT_ID, TestVariables.EXAMPLE_ACCOUNT_PUBKEY, BurstValue.fromBurst(1), BurstValue.fromBurst(1), 1440));
+        // TODO test with zero amounts
+        byte[] withoutMessageAmount = RxTestUtils.testSingle(burstNodeService.generateTransaction(TestVariables.EXAMPLE_ACCOUNT_ID, TestVariables.EXAMPLE_ACCOUNT_PUBKEY, BurstValue.fromBurst(1), BurstValue.fromBurst(1), 1440));
         byte[] withStringMessage = RxTestUtils.testSingle(burstNodeService.generateTransactionWithMessage(TestVariables.EXAMPLE_ACCOUNT_ID, TestVariables.EXAMPLE_ACCOUNT_PUBKEY, BurstValue.fromBurst(1), BurstValue.fromBurst(1), 1440, "Test Transaction"));
         byte[] withBytesMessage = RxTestUtils.testSingle(burstNodeService.generateTransactionWithMessage(TestVariables.EXAMPLE_ACCOUNT_ID, TestVariables.EXAMPLE_ACCOUNT_PUBKEY, BurstValue.fromBurst(1), BurstValue.fromBurst(1), 1440, TestVariables.EXAMPLE_ACCOUNT_PUBKEY));
     }
@@ -173,7 +165,9 @@ public class BurstNodeServiceTest {
 
     @Test
     public void testBurstServiceGenerateCreateATTransaction() {
-        byte[] lotteryAt = Hex.decode("1e000000003901090000006400000000000000351400000000000201000000000000000104000000803a0900000000000601000000040000003615000200000000000000260200000036160003000000020000001f030000000100000072361b0008000000020000002308000000090000000f1af3000000361c0004000000020000001e0400000035361700040000000200000026040000007f2004000000050000001e02050000000400000036180006000000020000000200000000030000001a39000000352000070000001b07000000181b0500000012332100060000001a310100000200000000030000001a1a0000003618000a0000000200000020080000000900000023070800000009000000341f00080000000a0000001a78000000341f00080000000a0000001ab800000002000000000400000003050000001a1a000000");
-        byte[] createATResponse = RxTestUtils.testSingle(burstNodeService.generateCreateATTransaction(TestVariables.EXAMPLE_ACCOUNT_PUBKEY, BurstValue.fromBurst(2), 1440, "TestAT", "An AT For Testing", new byte[0], lotteryAt, new byte[0], 0, 0, 0, BurstValue.fromBurst(1)));
+        byte[] lotteryAtCode = Hex.decode("1e000000003901090000006400000000000000351400000000000201000000000000000104000000803a0900000000000601000000040000003615000200000000000000260200000036160003000000020000001f030000000100000072361b0008000000020000002308000000090000000f1af3000000361c0004000000020000001e0400000035361700040000000200000026040000007f2004000000050000001e02050000000400000036180006000000020000000200000000030000001a39000000352000070000001b07000000181b0500000012332100060000001a310100000200000000030000001a1a0000003618000a0000000200000020080000000900000023070800000009000000341f00080000000a0000001a78000000341f00080000000a0000001ab800000002000000000400000003050000001a1a000000");
+        byte[] lotteryAtCreationBytes = BurstCrypto.getInstance().getATCreationBytes((short) 1, lotteryAtCode, new byte[0], 1, 1, 1, BurstValue.fromBurst(2));
+        assertEquals("01000000020001000100010000c2eb0b0000000044011e000000003901090000006400000000000000351400000000000201000000000000000104000000803a0900000000000601000000040000003615000200000000000000260200000036160003000000020000001f030000000100000072361b0008000000020000002308000000090000000f1af3000000361c0004000000020000001e0400000035361700040000000200000026040000007f2004000000050000001e02050000000400000036180006000000020000000200000000030000001a39000000352000070000001b07000000181b0500000012332100060000001a310100000200000000030000001a1a0000003618000a0000000200000020080000000900000023070800000009000000341f00080000000a0000001a78000000341f00080000000a0000001ab800000002000000000400000003050000001a1a00000000", Hex.toHexString(lotteryAtCreationBytes));
+        byte[] createATResponse = RxTestUtils.testSingle(burstNodeService.generateCreateATTransaction(TestVariables.EXAMPLE_ACCOUNT_PUBKEY, BurstValue.fromBurst(5), 1440, "TestAT", "An AT For Testing", lotteryAtCreationBytes));
     }
 }

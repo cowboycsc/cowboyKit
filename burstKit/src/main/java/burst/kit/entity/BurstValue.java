@@ -1,20 +1,21 @@
 package burst.kit.entity;
 
-import com.google.gson.JsonDeserializer;
-import com.google.gson.JsonPrimitive;
-import com.google.gson.JsonSerializer;
+import burst.kit.util.BurstKitUtils;
 
 import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.math.RoundingMode;
+import java.util.Locale;
 
-public final class BurstValue extends BigDecimal {
-    @SuppressWarnings("BigDecimalMethodWithoutRoundingCalled")
-    private BurstValue(String val) {
-        super(new BigDecimal(val).divide(BigDecimal.TEN.pow(8)).toString());
-    }
+public final class BurstValue implements Comparable<BurstValue> {
+    private static final int decimals = 8;
 
-    public BurstValue(BigDecimal bigDecimal) {
-        super(bigDecimal.toPlainString());
+    public static final BurstValue ZERO = BurstValue.fromPlanck(0);
+    
+    private final BigInteger planck;
+
+    private BurstValue(BigInteger planck) {
+        this.planck = planck;
     }
 
     /**
@@ -22,11 +23,14 @@ public final class BurstValue extends BigDecimal {
      * @return The BurstValue representing this number of planck, or a BurstValue representing 0 Burst if the string could not be parsed
      */
     public static BurstValue fromPlanck(String planck) {
-        if (planck == null) return null;
+        if (planck == null) return ZERO;
+        if (planck.toLowerCase(Locale.ENGLISH).endsWith(" planck")) {
+            planck = planck.substring(0, planck.length() - 7);
+        }
         try {
-            return new BurstValue(planck);
+            return fromPlanck(new BigInteger(planck));
         } catch (NumberFormatException e) {
-            return new BurstValue("0");
+            return fromPlanck(BigInteger.ZERO);
         }
     }
 
@@ -35,7 +39,12 @@ public final class BurstValue extends BigDecimal {
      * @return The BurstValue representing this number of planck
      */
     public static BurstValue fromPlanck(long planck) {
-        return fromPlanck(String.valueOf(planck));
+        return fromPlanck(BigInteger.valueOf(planck));
+    }
+
+    public static BurstValue fromPlanck(BigInteger planck) {
+        if (planck == null) return ZERO;
+        return new BurstValue(planck);
     }
 
     /**
@@ -43,11 +52,14 @@ public final class BurstValue extends BigDecimal {
      * @return The BurstValue representing this number of burst, or a BurstValue representing 0 Burst if the string could not be parsed
      */
     public static BurstValue fromBurst(String burst) {
-        if (burst == null) return null;
+        if (burst == null) return ZERO;
+        if (burst.toLowerCase(Locale.ENGLISH).endsWith(" " + BurstKitUtils.getValueSuffix().toLowerCase(Locale.ENGLISH))) {
+            burst = burst.substring(0, burst.length() - 6);
+        }
         try {
-            return new BurstValue(new BigDecimal(burst).multiply(BigDecimal.TEN.pow(8)).toString());
+            return fromBurst(new BigDecimal(burst));
         } catch (NumberFormatException e) {
-            return new BurstValue("0");
+            return fromPlanck(BigInteger.ZERO);
         }
     }
 
@@ -56,7 +68,12 @@ public final class BurstValue extends BigDecimal {
      * @return The BurstValue representing this number of burst
      */
     public static BurstValue fromBurst(double burst) {
-        return fromBurst(String.valueOf(burst));
+        return fromBurst(BigDecimal.valueOf(burst));
+    }
+
+    public static BurstValue fromBurst(BigDecimal burst) {
+        if (burst == null) return ZERO;
+        return new BurstValue(burst.multiply(BigDecimal.TEN.pow(decimals)).toBigInteger());
     }
 
     private static BigDecimal roundToThreeDP(BigDecimal in) {
@@ -67,24 +84,120 @@ public final class BurstValue extends BigDecimal {
         }
     }
 
+    @Override
+    public String toString() {
+        return toFormattedString();
+    }
+
     /**
      * @return The value with the "BURST" suffix and rounded to 3 decimal places
      */
     public String toFormattedString() {
-        return roundToThreeDP(this).toPlainString() + " BURST";
+        return roundToThreeDP(toBurst()).toPlainString() + " " + BurstKitUtils.getValueSuffix();
     }
 
     /**
      * @return The value without the "BURST" suffix and without rounding
      */
     public String toUnformattedString() {
-        return super.stripTrailingZeros().toPlainString();
+        return toBurst().stripTrailingZeros().toPlainString();
     }
 
     /**
-     * @return A string representing the number of planck
+     * @return A BigInteger representing the number of planck
      */
-    public String toPlanck() {
-        return multiply(BigDecimal.TEN.pow(8)).toBigInteger().toString();
+    public BigInteger toPlanck() {
+        return planck;
+    }
+
+    public BigDecimal toBurst() {
+        return new BigDecimal(planck, decimals);
+    }
+
+    public BurstValue add(BurstValue other) {
+        return fromPlanck(planck.add(other.planck));
+    }
+
+    public BurstValue subtract(BurstValue other) {
+        return fromPlanck(planck.subtract(other.planck));
+    }
+
+    public BurstValue multiply(long multiplicand) {
+        return fromPlanck(planck.multiply(BigInteger.valueOf(multiplicand)));
+    }
+
+    public BurstValue multiply(double multiplicand) {
+        return fromBurst(toBurst().multiply(BigDecimal.valueOf(multiplicand)));
+    }
+
+    public BurstValue multiply(BigInteger multiplicand) {
+        return fromPlanck(planck.multiply(multiplicand));
+    }
+
+    public BurstValue multiply(BigDecimal multiplicand) {
+        return fromBurst(toBurst().multiply(multiplicand));
+    }
+
+    public BurstValue divide(long divisor) {
+        return fromPlanck(planck.divide(BigInteger.valueOf(divisor)));
+    }
+
+    public BurstValue divide(double divisor) {
+        return fromBurst(toBurst().divide(BigDecimal.valueOf(divisor), decimals, RoundingMode.HALF_UP));
+    }
+    
+    public BurstValue divide(BigInteger divisor) {
+        return fromPlanck(planck.divide(divisor));
+    }
+
+    public BurstValue divide(BigDecimal divisor) {
+        return fromBurst(toBurst().divide(divisor, decimals, RoundingMode.HALF_UP));
+    }
+
+    public BurstValue abs() {
+        return fromPlanck(planck.abs());
+    }
+
+    @Override
+    public int compareTo(BurstValue other) {
+        if (other == null) return 1;
+        return planck.compareTo(other.planck);
+    }
+
+    public static BurstValue min(BurstValue a, BurstValue b) {
+        return (a.compareTo(b) <= 0) ? a : b;
+    }
+
+    public static BurstValue max(BurstValue a, BurstValue b) {
+        return (a.compareTo(b) >= 0) ? a : b;
+    }
+
+    /**
+     * @return The number of Burst as a double
+     */
+    public double doubleValue() { // TODO test
+        return toBurst().doubleValue();
+    }
+
+    /**
+     * @return The number of planck as a long
+     */
+    public long longValue() { // TODO test
+        return toPlanck().longValue();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        BurstValue that = (BurstValue) o;
+
+        return planck != null ? planck.equals(that.planck) : that.planck == null;
+    }
+
+    @Override
+    public int hashCode() {
+        return planck != null ? planck.hashCode() : 0;
     }
 }

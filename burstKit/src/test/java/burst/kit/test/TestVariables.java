@@ -6,7 +6,7 @@ import burst.kit.entity.BurstTimestamp;
 import org.bouncycastle.util.encoders.Hex;
 
 public class TestVariables {
-    public static final long EXAMPLE_BLOCK_HEIGHT = 470000;
+    public static final int EXAMPLE_BLOCK_HEIGHT = 470000;
     public static final BurstTimestamp EXAMPLE_TIMESTAMP = new BurstTimestamp(126144000); // 4 years
     public static final BurstID EXAMPLE_BLOCK_ID = BurstID.fromLong("9466704733664017405");
     public static final BurstAddress EXAMPLE_ACCOUNT_ID = BurstAddress.fromId(BurstID.fromLong("7009665667967103287"));
@@ -20,7 +20,7 @@ public class TestVariables {
     public static final BurstID EXAMPLE_MULTI_OUT_SAME_TRANSACTION_ID = BurstID.fromLong("5032020914938737522");
     public static final byte[] EXAMPLE_TRANSACTION_FULL_HASH = Hex.decode("e475946429c220d33f414a9d6106452547abe23ee1379fc38f571cac1c037c6f");
 
-    public static final BurstID EXAMPLE_AT_ID = BurstID.fromLong("3474457271106823767");
+    public static final BurstAddress EXAMPLE_AT_ID = BurstAddress.fromId("3474457271106823767");
 
     public static final String EXAMPLE_AT_LONG_HEX2LONG = "9900958322455989675";
 }

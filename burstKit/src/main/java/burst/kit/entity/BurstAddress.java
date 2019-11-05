@@ -1,9 +1,7 @@
 package burst.kit.entity;
 
 import burst.kit.crypto.BurstCrypto;
-import com.google.gson.JsonDeserializer;
-import com.google.gson.JsonPrimitive;
-import com.google.gson.JsonSerializer;
+import burst.kit.util.BurstKitUtils;
 
 import java.util.Objects;
 
@@ -32,6 +30,16 @@ public final class BurstAddress {
     }
 
     /**
+     * @param signedLongId The numeric id that represents this Burst Address, as a signed long
+     * @return A BurstAddress object that represents the specified numericId
+     * @throws NumberFormatException if the numericId is not a valid number
+     * @throws IllegalArgumentException if the numericId is outside the range of accepted numbers (less than 0 or greater than / equal to 2^64)
+     */
+    public static BurstAddress fromId(long signedLongId) {
+        return new BurstAddress(BurstID.fromLong(signedLongId));
+    }
+
+    /**
      * @param unsignedLongId The numeric id that represents this Burst Address
      * @return A BurstAddress object that represents the specified numericId
      * @throws NumberFormatException if the numericId is not a valid number
@@ -42,7 +50,7 @@ public final class BurstAddress {
     }
 
     public static BurstAddress fromRs(String RS) throws IllegalArgumentException {
-        if (RS.startsWith("COWBOY-")) {
+        if (RS.startsWith(BurstKitUtils.getAddressPrefix()+"-")) {
             RS = RS.substring(7);
         }
         return new BurstAddress(BurstCrypto.getInstance().rsDecode(RS));
@@ -82,6 +90,13 @@ public final class BurstAddress {
     }
 
     /**
+     * @return The signed long numeric ID this BurstAddress points to
+     */
+    public long getSignedLongId() {
+        return numericID.getSignedLongId();
+    }
+
+    /**
      * @return The ReedSolomon encoded address, without the "BURST-" prefix
      */
     public String getRawAddress() {
@@ -95,7 +110,7 @@ public final class BurstAddress {
         if (address == null || address.length() == 0) {
             return "";
         } else {
-            return "BURST-" + address;
+            return BurstKitUtils.getAddressPrefix() +  "-" + address;
         }
     }
 
