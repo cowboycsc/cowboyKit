@@ -24,7 +24,7 @@ public final class BurstTimestamp {
     /**
      * @return The burst timestamp (number of seconds since Burst epoch)
      */
-    public int getTimestamp() {
+    public long getTimestamp() {
         return timestamp;
     }
 

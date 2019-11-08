@@ -2,13 +2,12 @@ package burst.kit.service;
 
 import burst.kit.entity.*;
 import burst.kit.entity.response.*;
-import burst.kit.service.impl.CompositeBurstNodeService;
-import burst.kit.service.impl.GrpcBurstNodeService;
 import burst.kit.service.impl.HttpBurstNodeService;
+import burst.kit.service.impl.DefaultSchedulerAssigner;
+import burst.kit.util.SchedulerAssigner;
 import io.reactivex.Observable;
 import io.reactivex.Single;
 
-import java.util.Arrays;
 import java.util.Map;
 import java.util.Set;
 
@@ -25,7 +24,7 @@ public interface BurstNodeService {
      * @param height The height of the block
      * @return The block details, wrapped in a Single
      */
-    Single<Block> getBlock(int height);
+    Single<Block> getBlock(long height);
 
     /**
      * Get the block at the specified timestamp
@@ -38,10 +37,8 @@ public interface BurstNodeService {
      * Get the block ID at a specified height
      * @param height The height of the block
      * @return The Block ID response, wrapped in a single
-     * @deprecated Just use getBlock and then getId instead
      */
-    @Deprecated
-    Single<BurstID> getBlockId(int height);
+    Single<BurstID> getBlockId(long height);
 
     /**
      * Gets all the blocks between the first index and last index.
@@ -49,7 +46,7 @@ public interface BurstNodeService {
      * @param lastIndex The end index from the most recent blocks
      * @return The blocks, wrapped in a single
      */
-    Single<Block[]> getBlocks(int firstIndex, int lastIndex); // TODO includeTransactions?
+    Single<Block[]> getBlocks(long firstIndex, long lastIndex); // TODO includeTransactions?
 
     /**
      * Get the Constants in use by the node
@@ -75,9 +72,7 @@ public interface BurstNodeService {
      * Get the IDs of the blocks forged by an account
      * @param accountId The address of the account
      * @return The block IDs, wrapped in a single
-     * @deprecated Just use getAccountBlocks and then getId instead
      */
-    @Deprecated
     Single<BurstID[]> getAccountBlockIDs(BurstAddress accountId); // TODO timestamp, firstIndex, lastIndex
 
     /**
@@ -110,16 +105,16 @@ public interface BurstNodeService {
 
     /**
      * Get the details of an AT
-     * @param at The address of the AT
+     * @param atId The ID of the AT
      * @return The details of the AT, wrapped in a single
      */
-    Single<AT> getAt(BurstAddress at);
+    Single<AT> getAt(BurstID atId);
 
     /**
-     * Get the list of addresses of all ATs
-     * @return The list of AT addresses, wrapped in a single
+     * Get the list of IDs of all ATs
+     * @return The list of AT IDs, wrapped in a single
      */
-    Single<BurstAddress[]> getAtIds();
+    Single<BurstID[]> getAtIds();
 
     /**
      * Get the details of a transaction
@@ -218,7 +213,7 @@ public interface BurstNodeService {
      * @param transactionBytes The signed transaction bytes
      * @return The number of peers this transaction was broadcast to, wrapped in a single
      */
-    Single<TransactionBroadcast> broadcastTransaction(byte[] transactionBytes);
+    Single<Integer> broadcastTransaction(byte[] transactionBytes);
 
     /**
      * Get the reward recipient of the account
@@ -267,30 +262,28 @@ public interface BurstNodeService {
      * @param name The name of the AT
      * @param description The description of the AT
      * @param creationBytes The creation bytes of the AT (if pre-calculated and not using the following fields)
+     * @param code The AT code
+     * @param dpages The AT data
+     * @param cspages Number of CS pages
+     * @param uspages Number of US pages
+     * @param minActivationAmount The minimum activation amount for the AT
      * @return The unsigned transaction bytes, wrapped in a single
      */
-    Single<byte[]> generateCreateATTransaction(byte[] senderPublicKey, BurstValue fee, int deadline, String name, String description, byte[] creationBytes);
+    Single<byte[]> generateCreateATTransaction(byte[] senderPublicKey, BurstValue fee, int deadline, String name, String description, byte[] creationBytes, byte[] code, byte[] data, int dpages, int cspages, int uspages, BurstValue minActivationAmount);
+
+    static BurstNodeService getInstance(String nodeAddress, String userAgent, SchedulerAssigner schedulerAssigner) {
+        return new HttpBurstNodeService(nodeAddress, userAgent, schedulerAssigner);
+    }
+
+    static BurstNodeService getInstance(String nodeAddress, String userAgent) {
+        return new HttpBurstNodeService(nodeAddress, userAgent, new DefaultSchedulerAssigner());
+    }
+
+    static BurstNodeService getInstance(String nodeAddress, SchedulerAssigner schedulerAssigner) {
+        return new HttpBurstNodeService(nodeAddress, null, schedulerAssigner);
+    }
 
     static BurstNodeService getInstance(String nodeAddress) {
-        return getInstance(nodeAddress, null);
-    }
-
-    static BurstNodeService getInstance(String nodeAddress, String httpUserAgent) {
-        if (nodeAddress.startsWith("grpc://")) {
-            return new GrpcBurstNodeService(nodeAddress);
-        } else {
-            return new HttpBurstNodeService(nodeAddress, httpUserAgent);
-        }
-    }
-
-    static BurstNodeService getCompositeInstance(String... nodeAddresses) {
-        return getCompositeInstanceWithUserAgent(null, nodeAddresses);
-    }
-
-    static BurstNodeService getCompositeInstanceWithUserAgent(String httpUserAgent, String... nodeAddresses) {
-        if (nodeAddresses.length == 1) return getInstance(nodeAddresses[0], httpUserAgent);
-        return new CompositeBurstNodeService(Arrays.stream(nodeAddresses)
-                .map(nodeAddress -> getInstance(nodeAddress, httpUserAgent))
-                .toArray(BurstNodeService[]::new));
+        return new HttpBurstNodeService(nodeAddress, null, new DefaultSchedulerAssigner());
     }
 }

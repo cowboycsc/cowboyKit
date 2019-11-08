@@ -1,11 +1,8 @@
 package burst.kit.entity;
 
-import burst.kit.util.BurstKitUtils;
-
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.math.RoundingMode;
-import java.util.Locale;
 
 public final class BurstValue implements Comparable<BurstValue> {
     private static final int decimals = 8;
@@ -24,9 +21,6 @@ public final class BurstValue implements Comparable<BurstValue> {
      */
     public static BurstValue fromPlanck(String planck) {
         if (planck == null) return ZERO;
-        if (planck.toLowerCase(Locale.ENGLISH).endsWith(" planck")) {
-            planck = planck.substring(0, planck.length() - 7);
-        }
         try {
             return fromPlanck(new BigInteger(planck));
         } catch (NumberFormatException e) {
@@ -53,9 +47,6 @@ public final class BurstValue implements Comparable<BurstValue> {
      */
     public static BurstValue fromBurst(String burst) {
         if (burst == null) return ZERO;
-        if (burst.toLowerCase(Locale.ENGLISH).endsWith(" " + BurstKitUtils.getValueSuffix().toLowerCase(Locale.ENGLISH))) {
-            burst = burst.substring(0, burst.length() - 6);
-        }
         try {
             return fromBurst(new BigDecimal(burst));
         } catch (NumberFormatException e) {
@@ -93,7 +84,7 @@ public final class BurstValue implements Comparable<BurstValue> {
      * @return The value with the "BURST" suffix and rounded to 3 decimal places
      */
     public String toFormattedString() {
-        return roundToThreeDP(toBurst()).toPlainString() + " " + BurstKitUtils.getValueSuffix();
+        return roundToThreeDP(toBurst()).toPlainString() + " BURST";
     }
 
     /**
@@ -170,20 +161,6 @@ public final class BurstValue implements Comparable<BurstValue> {
 
     public static BurstValue max(BurstValue a, BurstValue b) {
         return (a.compareTo(b) >= 0) ? a : b;
-    }
-
-    /**
-     * @return The number of Burst as a double
-     */
-    public double doubleValue() { // TODO test
-        return toBurst().doubleValue();
-    }
-
-    /**
-     * @return The number of planck as a long
-     */
-    public long longValue() { // TODO test
-        return toPlanck().longValue();
     }
 
     @Override

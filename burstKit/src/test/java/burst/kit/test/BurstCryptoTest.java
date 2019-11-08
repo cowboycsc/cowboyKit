@@ -10,7 +10,7 @@ import org.junit.runners.JUnit4;
 import java.nio.charset.StandardCharsets;
 
 @RunWith(JUnit4.class)
-public class BurstCryptoTest { // TODO more unit tests
+public class BurstCryptoTest {
     @Test
     public void TestEncryptTextMessage() {
         String message = "Test message";
